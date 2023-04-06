@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { easing } from 'maath';
+import { useRef } from 'react';
+import { Group } from 'three';
 import { useSnapshot } from 'valtio';
 import state from '../../store';
 
@@ -11,7 +12,7 @@ interface Props {
 type Position = [x: number, y: number, z: number];
 
 const CameraRig = ({ children }: Props) => {
-  const group = useRef(null);
+  const group = useRef<Group>(null!);
   const snap = useSnapshot(state);
 
   useFrame((state, delta) => {

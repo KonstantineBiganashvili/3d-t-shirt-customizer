@@ -2,13 +2,19 @@ import React, { Dispatch, SetStateAction } from 'react';
 import CustomButton from '../CustomButton/index';
 
 interface Props {
-  file: File;
-  setFile: Dispatch<SetStateAction<File>>;
-  readFile: (type: any) => void;
+  file: File | null;
+  setFile: Dispatch<SetStateAction<File | null>>;
+  readFile: (type: string) => void;
 }
 
 const FilePicker = (props: Props) => {
   const { file, setFile, readFile } = props;
+
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void => {
+    setFile(event.target.files?.[0] || null);
+  };
 
   return (
     <div className="filepicker-container">
@@ -17,7 +23,7 @@ const FilePicker = (props: Props) => {
           id="file-upload"
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files[0])}
+          onChange={handleFileUpload}
         />
         <label htmlFor="file-upload" className="filepicker-label">
           Upload File

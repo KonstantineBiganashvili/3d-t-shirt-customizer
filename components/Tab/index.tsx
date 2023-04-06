@@ -1,5 +1,4 @@
 import { StaticImageData } from 'next/image';
-import React from 'react';
 import { useSnapshot } from 'valtio';
 import state from '../../store/index';
 
@@ -9,7 +8,7 @@ interface Props {
     icon: StaticImageData;
   };
   isFilterTab?: boolean;
-  isActiveTab?: string;
+  isActiveTab?: boolean;
   handleClick: () => void;
 }
 

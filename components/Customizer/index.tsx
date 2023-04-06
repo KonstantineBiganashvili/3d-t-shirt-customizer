@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import config from '../../config/config';
-import state from '../../store';
-import { download } from '../../assets';
-import { EditorTabs, FilterTabs, DecalTypes } from '../../config/constants';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 import { useSnapshot } from 'valtio';
+import { DecalTypes, EditorTabs, FilterTabs } from '../../config/constants';
+import { reader } from '../../config/helpers';
 import { fadeAnimation, slideAnimation } from '../../config/motion';
+import state, { State } from '../../store';
 import AiPicker from '../AiPicker';
-import { downloadCanvasToImage, reader } from '../../config/helpers';
-import Tab from '../Tab';
+import ColorPicker from '../ColorPicker';
 import CustomButton from '../CustomButton';
 import FilePicker from '../FilePicker';
-import ColorPicker from '../ColorPicker';
+import Tab from '../Tab';
+
+interface ActiveFilterTab {
+  [key: string]: boolean;
+}
 
 const Customizer = () => {
   const snap = useSnapshot(state);
 
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setGenerating] = useState(false);
   const [activeEditorTab, setActiveEditorTab] = useState('');
-  const [activeFilterTab, setActiveFilterTab] = useState({
+  const [activeFilterTab, setActiveFilterTab] = useState<ActiveFilterTab>({
     logoShirt: true,
     stylishShirt: false,
   });
@@ -32,9 +34,44 @@ const Customizer = () => {
       case 'filepicker':
         return <FilePicker file={file} setFile={setFile} readFile={readFile} />;
       case 'aipicker':
-        return <AiPicker />;
+        return (
+          <AiPicker
+            prompt={prompt}
+            setPrompt={setPrompt}
+            isGenerating={isGenerating}
+            handleSubmit={handleSubmit}
+          />
+        );
       default:
         return null;
+    }
+  };
+
+  const handleSubmit = async (type: string) => {
+    console.log('function launched');
+
+    if (!prompt) return alert('Please Enter A Prompt!');
+
+    try {
+      setGenerating(true);
+
+      const response = await fetch('/api/dalle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await response.json();
+
+      handleDecals(type, `data:image/png;base64,${data.photo}`);
+    } catch (error) {
+      alert(
+        `Can't generate image following input: ${prompt}. \nPlease try different input.`
+      );
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -50,18 +87,24 @@ const Customizer = () => {
         state.isLogoTexture = true;
         state.isFullTexture = false;
     }
+
+    setActiveFilterTab((prevState) => ({
+      ...prevState,
+      [tabName]: !prevState[tabName],
+    }));
   };
 
-  const handleDecals = (type, result) => {
-    const decalType = DecalTypes[type];
-    state[decalType.stateProperty] = result;
+  const handleDecals = (type: string, result: string) => {
+    const decalType = DecalTypes[type as keyof typeof DecalTypes];
 
-    if (!activeFilterTab[decalType.flterTab]) {
+    state[decalType.stateProperty as keyof State] = result;
+
+    if (!activeFilterTab[decalType.filterTab as keyof typeof activeFilterTab]) {
       handleActiveFilterTab(decalType.filterTab);
     }
   };
 
-  const readFile = (type) => {
+  const readFile = (type: string) => {
     reader(file).then((res) => {
       handleDecals(type, res);
       setActiveEditorTab('');
@@ -113,8 +156,10 @@ const Customizer = () => {
                 key={tab.name}
                 tab={tab}
                 isFilterTab
-                isActiveTab=""
-                handleClick={() => {}}
+                isActiveTab={activeFilterTab[tab.name]}
+                handleClick={() => {
+                  handleActiveFilterTab(tab.name);
+                }}
               />
             ))}
           </motion.div>
